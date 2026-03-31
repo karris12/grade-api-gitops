@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grade-submission-api
+  namespace: prod   # ✅ changed
+spec:
+  replicas: 2        # ✅ more replicas for production
+  selector:
+    matchLabels:
+      app: grade-submission-api
+  template:
+    metadata:
+      labels:
+        app: grade-submission-api
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: grade-submission-api
+        image: ghcr.io/karris12/kubernetes-cicd-tutorial:prod   # ✅ changed
+        ports:
+        - containerPort: 3000
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        resources:
+          limits:
+            memory: "512Mi"   # ✅ stronger for prod
+            cpu: "1000m"
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grade-submission-api
+  namespace: prod   # ✅ changed
+spec:
+  selector:
+    app: grade-submission-api
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
